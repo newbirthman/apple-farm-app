@@ -28,6 +28,13 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="index"
                 options={{
+                    title: '홈',
+                    tabBarIcon: () => <Text style={{ fontSize: 22 }}>🏠</Text>,
+                }}
+            />
+            <Tabs.Screen
+                name="diary"
+                options={{
                     title: '영농일지',
                     tabBarIcon: () => <Text style={{ fontSize: 22 }}>📖</Text>,
                 }}
@@ -49,7 +56,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="tasks"
                 options={{
-                    title: '지금 할일',
+                    title: '할일',
                     tabBarIcon: () => <Text style={{ fontSize: 22 }}>✅</Text>,
                 }}
             />
