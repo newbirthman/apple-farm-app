@@ -4,6 +4,7 @@ import { useInventory } from '@/hooks/useInventory';
 import DailyDashboard from '@/components/inventory/DailyDashboard';
 import IncomingForm from '@/components/inventory/IncomingForm';
 import SalesForm from '@/components/inventory/SalesForm';
+import PriceListView from '@/components/inventory/PriceListView';
 
 export default function InventoryScreen() {
     const inventoryHook = useInventory();
@@ -31,6 +32,9 @@ export default function InventoryScreen() {
                 <TouchableOpacity style={[styles.tabButton, activeTab === 'sales' && styles.tabActive]} onPress={() => setActiveTab('sales')}>
                     <Text style={[styles.tabText, activeTab === 'sales' && styles.tabTextActive]}>판매 등록</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={[styles.tabButton, activeTab === 'prices' && styles.tabActive]} onPress={() => setActiveTab('prices')}>
+                    <Text style={[styles.tabText, activeTab === 'prices' && styles.tabTextActive]}>단가표</Text>
+                </TouchableOpacity>
             </View>
 
             {/* 컨텐츠 영역 */}
@@ -38,6 +42,7 @@ export default function InventoryScreen() {
                 {activeTab === 'dashboard' && <DailyDashboard inventoryHook={inventoryHook} />}
                 {activeTab === 'incoming' && <IncomingForm inventoryHook={inventoryHook} onSuccess={() => setActiveTab('dashboard')} />}
                 {activeTab === 'sales' && <SalesForm inventoryHook={inventoryHook} onSuccess={() => setActiveTab('dashboard')} />}
+                {activeTab === 'prices' && <PriceListView prices={inventoryHook.prices} updatePrice={inventoryHook.updatePrice} />}
             </View>
         </View>
     );
