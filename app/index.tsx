@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { getCurrentSeason, getSeasonData } from '@/data/farmWorkflow';
 import type { SeasonId } from '@/data/farmWorkflow';
+import WeatherWidget from '@/components/WeatherWidget';
 
 const urgencyBadge: Record<string, { bg: string; text: string; label: string }> = {
   '높음': { bg: '#fee2e2', text: '#dc2626', label: '🔴 긴급' },
@@ -11,13 +12,13 @@ const urgencyBadge: Record<string, { bg: string; text: string; label: string }> 
 
 export default function HomeScreen() {
   const [currentSeason, setCurrentSeason] = useState<SeasonId>('spring');
-  
+
   useEffect(() => {
     setCurrentSeason(getCurrentSeason());
   }, []);
 
   const seasonData = getSeasonData(currentSeason);
-  
+
   const seasonOrder: SeasonId[] = ['spring', 'summer', 'autumn', 'winter'];
   const nextIdx = (seasonOrder.indexOf(currentSeason) + 1) % 4;
   const nextSeason = getSeasonData(seasonOrder[nextIdx]);
@@ -29,6 +30,9 @@ export default function HomeScreen() {
         <Text style={styles.welcomeText}>안녕하세요 사장님! 👋</Text>
         <Text style={styles.welcomeSubtext}>오늘도 보람찬 하루 되세요.</Text>
       </View>
+
+      {/* 날씨/미세먼지 위젯 */}
+      <WeatherWidget />
 
       {/* 현재 시즌 가이드 배너 */}
       <View style={[styles.mainCard, { borderColor: seasonData.color === 'blue' ? '#93c5fd' : seasonData.color === 'pink' ? '#f9a8d4' : seasonData.color === 'green' ? '#86efac' : '#fca5a5' }]}>
