@@ -1,29 +1,40 @@
 import { Tabs } from 'expo-router';
-import { Text, Platform } from 'react-native';
+import { Text, Platform, TouchableOpacity } from 'react-native';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
-export default function TabLayout() {
+function TabNavigator() {
+    const { theme, isDarkMode, toggleTheme } = useTheme();
+
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: '#4a5f41',
-                tabBarInactiveTintColor: '#9ca3af',
+                sceneContainerStyle: {
+                    backgroundColor: theme.colors.background,
+                },
+                tabBarActiveTintColor: theme.colors.primary,
+                tabBarInactiveTintColor: theme.colors.subText,
                 tabBarStyle: {
-                    backgroundColor: '#ffffff',
+                    backgroundColor: theme.colors.card,
                     borderTopWidth: 1,
-                    borderTopColor: '#f3f4f6',
+                    borderTopColor: theme.colors.border,
                     height: Platform.OS === 'android' ? 95 : 85,
                     paddingBottom: Platform.OS === 'android' ? 40 : 28,
                     paddingTop: 8,
                 },
                 headerStyle: {
-                    backgroundColor: '#ffffff',
+                    backgroundColor: theme.colors.card,
                     borderBottomWidth: 1,
-                    borderBottomColor: '#f3f4f6',
+                    borderBottomColor: theme.colors.border,
                 },
                 headerTitleStyle: {
                     fontWeight: 'bold',
-                    color: '#1f2937',
+                    color: theme.colors.text,
                 },
+                headerRight: () => (
+                    <TouchableOpacity onPress={toggleTheme} style={{ marginRight: 16 }}>
+                        <Text style={{ fontSize: 24 }}>{isDarkMode ? '☀️' : '🌙'}</Text>
+                    </TouchableOpacity>
+                ),
             }}>
             <Tabs.Screen
                 name="index"
@@ -61,5 +72,13 @@ export default function TabLayout() {
                 }}
             />
         </Tabs>
+    );
+}
+
+export default function TabLayout() {
+    return (
+        <ThemeProvider>
+            <TabNavigator />
+        </ThemeProvider>
     );
 }

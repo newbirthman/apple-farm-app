@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface TodoItem {
     id: string;
@@ -9,13 +10,9 @@ interface TodoItem {
 }
 
 export default function TasksScreen() {
-    const [todos, setTodos] = useState<TodoItem[]>([
-        { id: '1', text: '비료 주문하기 (유기질 비료 1t)', done: false, createdAt: '2026-03-01' },
-        { id: '2', text: '방상팬 가동 테스트', done: false, createdAt: '2026-03-02' },
-        { id: '3', text: '전정 도구 소독 및 정비', done: true, createdAt: '2026-02-28' },
-        { id: '4', text: '서리 예보 확인 (기상청)', done: false, createdAt: '2026-03-04' },
-    ]);
+    const [todos, setTodos] = useState<TodoItem[]>([]);
     const [newTodo, setNewTodo] = useState('');
+    const { theme, isDarkMode } = useTheme();
 
     const addTodo = () => {
         if (!newTodo.trim()) {
@@ -47,81 +44,82 @@ export default function TasksScreen() {
     const completed = todos.filter(t => t.done);
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={styles.content}>
             {/* 입력 영역 */}
-            <View style={styles.card}>
-                <Text style={styles.sectionTitle}>📝 새 할일 추가</Text>
+            <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>📝 새 할일 추가</Text>
                 <View style={styles.inputRow}>
                     <TextInput
-                        style={styles.input}
+                        style={[styles.input, { backgroundColor: isDarkMode ? theme.colors.background : '#fff', color: theme.colors.text, borderColor: theme.colors.border }]}
                         value={newTodo}
                         onChangeText={setNewTodo}
                         placeholder="할 일을 입력하세요..."
+                        placeholderTextColor={theme.colors.subText}
                         returnKeyType="done"
                         onSubmitEditing={addTodo}
                     />
-                    <TouchableOpacity style={styles.addButton} onPress={addTodo}>
+                    <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.primary }]} onPress={addTodo}>
                         <Text style={styles.addButtonText}>추가</Text>
                     </TouchableOpacity>
                 </View>
             </View>
 
             {/* 진행 중 */}
-            <View style={styles.card}>
-                <Text style={styles.sectionTitle}>🔥 진행 중 ({pending.length})</Text>
+            <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>🔥 진행 중 ({pending.length})</Text>
                 {pending.length > 0 ? (
                     pending.map(item => (
-                        <TouchableOpacity key={item.id} style={styles.todoItem} onPress={() => toggleTodo(item.id)} onLongPress={() => deleteTodo(item.id)}>
-                            <View style={styles.checkbox} />
+                        <TouchableOpacity key={item.id} style={[styles.todoItem, { borderBottomColor: theme.colors.border }]} onPress={() => toggleTodo(item.id)} onLongPress={() => deleteTodo(item.id)}>
+                            <View style={[styles.checkbox, { borderColor: theme.colors.border }]} />
                             <View style={{ flex: 1 }}>
-                                <Text style={styles.todoText}>{item.text}</Text>
-                                <Text style={styles.todoDate}>{item.createdAt}</Text>
+                                <Text style={[styles.todoText, { color: theme.colors.text }]}>{item.text}</Text>
+                                <Text style={[styles.todoDate, { color: theme.colors.subText }]}>{item.createdAt}</Text>
                             </View>
                         </TouchableOpacity>
                     ))
                 ) : (
-                    <Text style={styles.emptyText}>모든 할일을 완료했습니다! 🎉</Text>
+                    <Text style={[styles.emptyText, { color: theme.colors.subText }]}>모든 할일을 완료했습니다! 🎉</Text>
                 )}
             </View>
 
             {/* 완료 */}
             {completed.length > 0 && (
-                <View style={styles.card}>
-                    <Text style={styles.sectionTitle}>✅ 완료 ({completed.length})</Text>
+                <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>✅ 완료 ({completed.length})</Text>
                     {completed.map(item => (
-                        <TouchableOpacity key={item.id} style={styles.todoItem} onPress={() => toggleTodo(item.id)} onLongPress={() => deleteTodo(item.id)}>
-                            <View style={[styles.checkbox, styles.checkboxDone]}>
+                        <TouchableOpacity key={item.id} style={[styles.todoItem, { borderBottomColor: theme.colors.border }]} onPress={() => toggleTodo(item.id)} onLongPress={() => deleteTodo(item.id)}>
+                            <View style={[styles.checkbox, styles.checkboxDone, { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }]}>
                                 <Text style={{ color: '#fff', fontSize: 12 }}>✓</Text>
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={[styles.todoText, styles.todoTextDone]}>{item.text}</Text>
-                                <Text style={styles.todoDate}>{item.createdAt}</Text>
+                                <Text style={[styles.todoText, styles.todoTextDone, { color: theme.colors.subText }]}>{item.text}</Text>
+                                <Text style={[styles.todoDate, { color: theme.colors.subText }]}>{item.createdAt}</Text>
                             </View>
                         </TouchableOpacity>
                     ))}
                 </View>
             )}
 
-            <Text style={styles.hint}>💡 탭하면 완료/미완료 전환, 길게 누르면 삭제</Text>
+            <Text style={[styles.hint, { color: theme.colors.subText }]}>💡 탭하면 완료/미완료 전환, 길게 누르면 삭제</Text>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f9fafb' },
+    container: { flex: 1 },
     content: { padding: 16, paddingBottom: 32 },
-    card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 16 },
-    sectionTitle: { fontSize: 17, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 },
+    card: { borderRadius: 12, padding: 16, borderWidth: 1, marginBottom: 16 },
+    sectionTitle: { fontSize: 17, fontWeight: 'bold', marginBottom: 12 },
     inputRow: { flexDirection: 'row', gap: 8 },
-    input: { flex: 1, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12, fontSize: 15, color: '#1f2937' },
-    addButton: { backgroundColor: '#4a5f41', paddingHorizontal: 20, borderRadius: 8, justifyContent: 'center' },
+    input: { flex: 1, borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 15 },
+    addButton: { paddingHorizontal: 20, borderRadius: 8, justifyContent: 'center' },
     addButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
-    todoItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-    checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
-    checkboxDone: { backgroundColor: '#16a34a', borderColor: '#16a34a' },
-    todoText: { fontSize: 15, color: '#1f2937' },
-    todoTextDone: { textDecorationLine: 'line-through', color: '#9ca3af' },
-    todoDate: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
-    emptyText: { textAlign: 'center', color: '#9ca3af', padding: 16, fontSize: 14 },
-    hint: { textAlign: 'center', color: '#9ca3af', fontSize: 12, marginTop: 8 },
+    todoItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: 1 },
+    checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+    checkboxDone: {},
+    todoText: { fontSize: 15 },
+    todoTextDone: { textDecorationLine: 'line-through' },
+    todoDate: { fontSize: 11, marginTop: 2 },
+    emptyText: { textAlign: 'center', padding: 16, fontSize: 14 },
+    hint: { textAlign: 'center', fontSize: 12, marginTop: 8 },
 });
