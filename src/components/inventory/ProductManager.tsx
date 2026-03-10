@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 
-const WEIGHT_UNITS = ['Kg', 'g', '박스', '상자', '망', '단', '개'];
-const ITEM_UNITS = ['과', '개', '크기', '박스', '상자', '망', '단', '봉지', '특대', '대', '중', '소', '미포장상자', '기본'];
+const WEIGHT_UNITS = ['Kg', 'g', '망', '단', '개'];
+const ITEM_UNITS = ['과', '개', '단(묶음)'];
 
 export default function ProductManager({ inventoryHook, onSuccess }: { inventoryHook: any, onSuccess: () => void }) {
     const { theme, isDarkMode } = useTheme();
@@ -48,14 +48,13 @@ export default function ProductManager({ inventoryHook, onSuccess }: { inventory
             });
             Alert.alert('등록 완료', '새로운 상품이 단가표에 등록되었습니다.');
 
-            // 폼 초기화 (사용자 요청: cropType은 그대로 유지)
+            // 폼 초기화 (품목은 유지)
             setWeightValue(10);
             setWeightUnit('Kg');
             setItemValue(20);
             setItemUnit('과');
             setPrice('0');
-
-            if (onSuccess) onSuccess();
+            // 탭 이동 안 함 (onSuccess 호출 제거)
         } catch (err: any) {
             Alert.alert('오류 발생', err.message);
         } finally {
@@ -91,6 +90,9 @@ export default function ProductManager({ inventoryHook, onSuccess }: { inventory
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustWeight(-10)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-10</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustWeight(-5)}>
+                        <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-5</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustWeight(-1)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-1</Text>
                     </TouchableOpacity>
@@ -107,6 +109,9 @@ export default function ProductManager({ inventoryHook, onSuccess }: { inventory
                     />
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustWeight(1)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+1</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustWeight(5)}>
+                        <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+5</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustWeight(10)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+10</Text>
@@ -143,6 +148,9 @@ export default function ProductManager({ inventoryHook, onSuccess }: { inventory
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustItem(-10)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-10</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustItem(-5)}>
+                        <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-5</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustItem(-1)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-1</Text>
                     </TouchableOpacity>
@@ -159,6 +167,9 @@ export default function ProductManager({ inventoryHook, onSuccess }: { inventory
                     />
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustItem(1)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+1</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustItem(5)}>
+                        <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+5</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustItem(10)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+10</Text>

@@ -6,15 +6,18 @@ import { useTheme } from '@/contexts/ThemeContext';
 interface PriceListViewProps {
     prices: PriceItem[];
     deliveryFee: number;
+    deliveryFeeIsland: number;
     updateDeliveryFee: (fee: number) => void;
+    updateDeliveryFeeIsland: (fee: number) => void;
     updatePrice: (id: string, newPrice: number) => void;
     deletePriceItem: (id: string) => void;
 }
 
-export default function PriceListView({ prices, deliveryFee, updateDeliveryFee, updatePrice, deletePriceItem }: PriceListViewProps) {
+export default function PriceListView({ prices, deliveryFee, deliveryFeeIsland, updateDeliveryFee, updateDeliveryFeeIsland, updatePrice, deletePriceItem }: PriceListViewProps) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editPrice, setEditPrice] = useState<string>('');
     const [feeInput, setFeeInput] = useState<string>(String(deliveryFee || 0));
+    const [feeIslandInput, setFeeIslandInput] = useState<string>(String(deliveryFeeIsland || 0));
     const [isEditingFee, setIsEditingFee] = useState(false);
     const { theme, isDarkMode } = useTheme();
 
@@ -34,41 +37,64 @@ export default function PriceListView({ prices, deliveryFee, updateDeliveryFee, 
                 <Text style={[styles.feeDesc, { color: theme.colors.subText }]}>이 금액은 택배 칼럼의 모든 단가에 합산됩니다.</Text>
                 <View style={styles.feeRow}>
                     {isEditingFee ? (
-                        <View style={styles.feeEditRow}>
-                            <TextInput
-                                style={[styles.feeInput, { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}
-                                value={feeInput}
-                                onChangeText={setFeeInput}
-                                keyboardType="numeric"
-                                autoFocus
-                            />
-                            <Text style={{ color: theme.colors.subText, marginLeft: 4, fontSize: 14 }}>원</Text>
-                            <TouchableOpacity
-                                style={[styles.feeBtn, { backgroundColor: theme.colors.primary, marginLeft: 10 }]}
-                                onPress={() => {
-                                    const num = parseInt(feeInput, 10);
-                                    if (!isNaN(num) && num >= 0) {
-                                        updateDeliveryFee(num);
+                        <View>
+                            <View style={[styles.feeEditRow, { marginBottom: 8 }]}>
+                                <Text style={{ color: theme.colors.text, fontWeight: 'bold', fontSize: 13, width: 70 }}>일반지역</Text>
+                                <TextInput
+                                    style={[styles.feeInput, { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}
+                                    value={feeInput}
+                                    onChangeText={setFeeInput}
+                                    keyboardType="numeric"
+                                    autoFocus
+                                />
+                                <Text style={{ color: theme.colors.subText, marginLeft: 4, fontSize: 14 }}>원</Text>
+                            </View>
+                            <View style={[styles.feeEditRow, { marginBottom: 10 }]}>
+                                <Text style={{ color: theme.colors.text, fontWeight: 'bold', fontSize: 13, width: 70 }}>도서산간</Text>
+                                <TextInput
+                                    style={[styles.feeInput, { color: theme.colors.text, borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}
+                                    value={feeIslandInput}
+                                    onChangeText={setFeeIslandInput}
+                                    keyboardType="numeric"
+                                />
+                                <Text style={{ color: theme.colors.subText, marginLeft: 4, fontSize: 14 }}>원</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', gap: 6 }}>
+                                <TouchableOpacity
+                                    style={[styles.feeBtn, { backgroundColor: theme.colors.primary }]}
+                                    onPress={() => {
+                                        const num1 = parseInt(feeInput, 10);
+                                        const num2 = parseInt(feeIslandInput, 10);
+                                        if (!isNaN(num1) && num1 >= 0) updateDeliveryFee(num1);
+                                        if (!isNaN(num2) && num2 >= 0) updateDeliveryFeeIsland(num2);
                                         setIsEditingFee(false);
-                                    }
-                                }}
-                            >
-                                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>저장</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.feeBtn, { backgroundColor: isDarkMode ? '#555' : '#e5e7eb', marginLeft: 6 }]}
-                                onPress={() => {
-                                    setFeeInput(String(deliveryFee));
-                                    setIsEditingFee(false);
-                                }}
-                            >
-                                <Text style={{ color: theme.colors.text, fontWeight: 'bold', fontSize: 13 }}>취소</Text>
-                            </TouchableOpacity>
+                                    }}
+                                >
+                                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 13 }}>저장</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.feeBtn, { backgroundColor: isDarkMode ? '#555' : '#e5e7eb' }]}
+                                    onPress={() => {
+                                        setFeeInput(String(deliveryFee));
+                                        setFeeIslandInput(String(deliveryFeeIsland));
+                                        setIsEditingFee(false);
+                                    }}
+                                >
+                                    <Text style={{ color: theme.colors.text, fontWeight: 'bold', fontSize: 13 }}>취소</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     ) : (
-                        <TouchableOpacity style={styles.feeDisplayRow} onPress={() => { setFeeInput(String(deliveryFee)); setIsEditingFee(true); }}>
-                            <Text style={[styles.feeValue, { color: theme.colors.primary }]}>💵 {deliveryFee.toLocaleString()} 원</Text>
-                            <Text style={[styles.feeEditLabel, { color: '#2563eb' }]}>수정</Text>
+                        <TouchableOpacity onPress={() => { setFeeInput(String(deliveryFee)); setFeeIslandInput(String(deliveryFeeIsland)); setIsEditingFee(true); }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <Text style={{ color: theme.colors.subText, fontSize: 13 }}>일반지역</Text>
+                                <Text style={[styles.feeValue, { color: theme.colors.primary }]}>💵 {deliveryFee.toLocaleString()} 원</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <Text style={{ color: theme.colors.subText, fontSize: 13 }}>도서산간</Text>
+                                <Text style={[styles.feeValue, { color: '#ea580c' }]}>🏝️ {deliveryFeeIsland.toLocaleString()} 원</Text>
+                            </View>
+                            <Text style={[styles.feeEditLabel, { color: '#2563eb', textAlign: 'right' }]}>탭하여 수정</Text>
                         </TouchableOpacity>
                     )}
                 </View>

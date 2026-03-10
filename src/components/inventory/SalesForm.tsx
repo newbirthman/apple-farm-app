@@ -3,6 +3,14 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert,
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/contexts/ThemeContext';
 
+// 전화번호 자동 포맷 (010-XXXX-XXXX)
+function formatPhone(raw: string): string {
+    const digits = raw.replace(/[^0-9]/g, '');
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+}
+
 export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook: any, onSuccess: () => void }) {
     const [dateObj, setDateObj] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -11,15 +19,17 @@ export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook:
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [customerName, setCustomerName] = useState('');
-    const [customerPhone, setCustomerPhone] = useState('');
+    const [customerPhone, setCustomerPhone] = useState('010-');
     const [customerAddress, setCustomerAddress] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
+    const [isIsland, setIsIsland] = useState(false);
 
     const { theme, isDarkMode } = useTheme();
 
     const prices = inventoryHook.prices || [];
     const customers = inventoryHook.customers || [];
     const deliveryFee = inventoryHook.deliveryFee || 0;
+    const deliveryFeeIsland = inventoryHook.deliveryFeeIsland || 0;
 
     // 1단계: 품목(cropType) 추출 및 상태 관리
     const cropTypes = Array.from(new Set(prices.map((p: any) => p.cropType || '사과'))) as string[];
@@ -41,7 +51,8 @@ export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook:
     // unitPrice는 품목, 카테고리, 아이템이 일치하는 기본 단가 + 포장상태가 택배포장이면 택배비 추가
     const unitPriceRecord = prices.find((p: any) => (p.cropType || '사과') === cropType && p.category === category && p.itemName === itemName);
     const basePrice = unitPriceRecord ? unitPriceRecord.price : 0;
-    const finalUnitPrice = packagingStatus === '택배포장' ? basePrice + deliveryFee : basePrice;
+    const appliedDeliveryFee = isIsland ? deliveryFeeIsland : deliveryFee;
+    const finalUnitPrice = packagingStatus === '택배포장' ? basePrice + appliedDeliveryFee : basePrice;
     const unitPrice = finalUnitPrice;
 
     const dateStr = dateObj.toISOString().split('T')[0];
@@ -107,6 +118,7 @@ export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook:
                 totalPrice
             });
             Alert.alert('등록 완료', '판매 내역이 저장되었습니다.');
+            setCustomerName(''); setCustomerPhone('010-'); setCustomerAddress(''); setIsIsland(false);
             onSuccess();
         } catch (err: any) {
             Alert.alert('오류 발생', err.message);
@@ -267,7 +279,7 @@ export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook:
                                 placeholder="전화번호 (예: 010-1234-5678)"
                                 placeholderTextColor={theme.colors.subText}
                                 value={customerPhone}
-                                onChangeText={setCustomerPhone}
+                                onChangeText={(t) => setCustomerPhone(formatPhone(t))}
                                 keyboardType="phone-pad"
                             />
                             <TextInput
@@ -278,6 +290,17 @@ export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook:
                                 onChangeText={setCustomerAddress}
                                 multiline
                             />
+                            {/* 도서/산간지역 체크 */}
+                            <TouchableOpacity
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingVertical: 6 }}
+                                onPress={() => setIsIsland(!isIsland)}
+                            >
+                                <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: isIsland ? theme.colors.secondary : theme.colors.border, backgroundColor: isIsland ? theme.colors.secondary : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                                    {isIsland && <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>✓</Text>}
+                                </View>
+                                <Text style={{ color: theme.colors.text, fontSize: 14, fontWeight: 'bold' }}>🏝️ 도서/산간지역</Text>
+                                {isIsland && <Text style={{ color: theme.colors.secondary, fontSize: 12, fontWeight: 'bold' }}>(택배비 {deliveryFeeIsland.toLocaleString()}원 적용)</Text>}
+                            </TouchableOpacity>
                         </View>
                     )}
                 </View>
@@ -287,6 +310,9 @@ export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook:
                 <View style={styles.stepperRow}>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(-10)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-10</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(-5)}>
+                        <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-5</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(-1)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-1</Text>
@@ -305,6 +331,9 @@ export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook:
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(1)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+1</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(5)}>
+                        <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+5</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(10)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+10</Text>
                     </TouchableOpacity>
@@ -312,7 +341,7 @@ export default function SalesForm({ inventoryHook, onSuccess }: { inventoryHook:
 
                 {/* 예상 매출 */}
                 <View style={[styles.summaryBox, { backgroundColor: isDarkMode ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4', borderColor: isDarkMode ? 'rgba(34, 197, 94, 0.3)' : '#bbf7d0' }]}>
-                    <Text style={[styles.summaryLabel, { color: theme.colors.primary }]}>💰 예상 매출 {packagingStatus === '택배포장' && `(택배비 ${deliveryFee.toLocaleString()}원 포함)`}</Text>
+                    <Text style={[styles.summaryLabel, { color: theme.colors.primary }]}>💰 예상 매출 {packagingStatus === '택배포장' && `(${isIsland ? '도서산간' : '일반'} 택배비 ${appliedDeliveryFee.toLocaleString()}원 포함)`}</Text>
                     <Text style={[styles.summaryValue, { color: theme.colors.primary }]}>
                         {quantity} × {unitPrice.toLocaleString()}원 = {totalPrice.toLocaleString()}원
                     </Text>

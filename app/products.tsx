@@ -33,8 +33,8 @@ export default function ProductsScreen() {
 
             {/* 컨텐츠 영역 */}
             <View style={styles.content}>
-                {activeTab === 'product' && <ProductManager inventoryHook={inventoryHook} onSuccess={() => setActiveTab('prices')} />}
-                {activeTab === 'prices' && <PriceListView prices={inventoryHook.prices} deliveryFee={inventoryHook.deliveryFee} updateDeliveryFee={inventoryHook.updateDeliveryFee} updatePrice={inventoryHook.updatePrice} deletePriceItem={inventoryHook.deletePriceItem} />}
+                {activeTab === 'product' && <ProductManager inventoryHook={inventoryHook} onSuccess={() => { }} />}
+                {activeTab === 'prices' && <PriceListView prices={inventoryHook.prices} deliveryFee={inventoryHook.deliveryFee} deliveryFeeIsland={inventoryHook.deliveryFeeIsland} updateDeliveryFee={inventoryHook.updateDeliveryFee} updateDeliveryFeeIsland={inventoryHook.updateDeliveryFeeIsland} updatePrice={inventoryHook.updatePrice} deletePriceItem={inventoryHook.deletePriceItem} />}
             </View>
         </View>
     );

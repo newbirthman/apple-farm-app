@@ -206,6 +206,9 @@ export default function IncomingForm({ inventoryHook, onSuccess }: { inventoryHo
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(-10)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-10</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(-5)}>
+                        <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-5</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(-1)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>-1</Text>
                     </TouchableOpacity>
@@ -222,6 +225,9 @@ export default function IncomingForm({ inventoryHook, onSuccess }: { inventoryHo
                     />
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(1)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+1</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(5)}>
+                        <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+5</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: isDarkMode ? theme.colors.background : '#e5e7eb' }]} onPress={() => adjustQuantity(10)}>
                         <Text style={[styles.stepperBtnText, { color: theme.colors.text }]}>+10</Text>
