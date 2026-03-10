@@ -1,87 +1,135 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { getCurrentSeason, getSeasonData } from '@/data/farmWorkflow';
-import type { SeasonId } from '@/data/farmWorkflow';
+import { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import WeatherWidget from '@/components/WeatherWidget';
 import { useTheme } from '@/contexts/ThemeContext';
-
-const urgencyBadge: Record<string, { bg: string; text: string; label: string }> = {
-  '높음': { bg: '#fee2e2', text: '#dc2626', label: '🔴 긴급' },
-  '보통': { bg: '#fef9c3', text: '#ca8a04', label: '🟡 보통' },
-  '낮음': { bg: '#dcfce7', text: '#16a34a', label: '🟢 여유' },
-};
+import { useInventory } from '@/hooks/useInventory';
+import { supabase } from '@/lib/supabase';
 
 export default function HomeScreen() {
-  const [currentSeason, setCurrentSeason] = useState<SeasonId>('spring');
   const { theme, isDarkMode } = useTheme();
+  const inventoryHook = useInventory();
+  const { sales, isLoading: isInvLoading } = inventoryHook;
+
+  const [recentMemos, setRecentMemos] = useState<any[]>([]);
+  const [todoCount, setTodoCount] = useState(0);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // 오늘의 판매 합계 계산
+  const todaySalesTotal = useMemo(() => {
+    return sales
+      .filter(s => s.date === todayStr)
+      .reduce((sum, s) => sum + (s.totalPrice || 0), 0);
+  }, [sales, todayStr]);
+
+  // 재고 위험 품목 (잔고 10개 미만)
+  const lowStockItems = useMemo(() => {
+    const summaryMap: Record<string, number> = {};
+    inventoryHook.incoming.filter(i => i.type === '판매대기').forEach(r => {
+      const key = `${r.cropType || '사과'} ${r.category} ${r.itemName || ''}`;
+      summaryMap[key] = (summaryMap[key] || 0) + r.quantity;
+    });
+    sales.forEach(s => {
+      const key = `${s.cropType || '사과'} ${s.category} ${s.itemName || ''}`;
+      if (summaryMap[key]) summaryMap[key] -= s.quantity;
+    });
+    return Object.entries(summaryMap)
+      .filter(([_, qty]) => qty > 0 && qty < 10)
+      .map(([name, qty]) => ({ name, qty }));
+  }, [inventoryHook.incoming, sales]);
 
   useEffect(() => {
-    setCurrentSeason(getCurrentSeason());
+    async function fetchDashboardData() {
+      try {
+        setIsDataLoading(true);
+        // 1. 최근 영농일지 2건
+        const { data: memoData } = await supabase
+          .from('memos')
+          .select('*')
+          .order('date', { ascending: false })
+          .limit(2);
+
+        // 2. 미완료 할일 개수
+        const { count } = await supabase
+          .from('todos')
+          .select('*', { count: 'exact', head: true })
+          .eq('done', false);
+
+        if (memoData) setRecentMemos(memoData);
+        setTodoCount(count || 0);
+      } catch (err) {
+        console.error('대시보드 데이터 로드 실패:', err);
+      } finally {
+        setIsDataLoading(false);
+      }
+    }
+    fetchDashboardData();
   }, []);
 
-  const seasonData = getSeasonData(currentSeason);
-
-  const seasonOrder: SeasonId[] = ['spring', 'summer', 'autumn', 'winter'];
-  const nextIdx = (seasonOrder.indexOf(currentSeason) + 1) % 4;
-  const nextSeason = getSeasonData(seasonOrder[nextIdx]);
+  if (isInvLoading || isDataLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={styles.content}>
       {/* 웰컴 헤더 */}
       <View style={styles.welcomeSection}>
-        <Text style={[styles.welcomeText, { color: theme.colors.text }]}>안녕하세요 사장님! 👋</Text>
-        <Text style={[styles.welcomeSubtext, { color: theme.colors.subText }]}>오늘도 보람찬 하루 되세요.</Text>
+        <Text style={[styles.welcomeText, { color: theme.colors.text }]}>사장님, 반갑습니다! 👋</Text>
+        <Text style={[styles.welcomeSubtext, { color: theme.colors.subText }]}>오늘 농장의 주요 현황을 확인하세요.</Text>
       </View>
 
-      {/* 날씨/미세먼지 위젯 (위젯 내부에서 별도 테마 대응) */}
+      {/* 날씨/미세먼지 위젯 */}
       <WeatherWidget />
 
-      {/* 현재 시즌 가이드 배너 */}
-      <View style={[styles.mainCard, { backgroundColor: theme.colors.card, borderColor: isDarkMode ? theme.colors.borderDark : (seasonData.color === 'blue' ? '#93c5fd' : seasonData.color === 'pink' ? '#f9a8d4' : seasonData.color === 'green' ? '#86efac' : '#fca5a5') }]}>
-        <View style={styles.bannerRow}>
-          <Text style={styles.bannerEmoji}>{seasonData.emoji}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.bannerTitle, { color: isDarkMode ? theme.colors.primary : (seasonData.color === 'blue' ? '#1e40af' : seasonData.color === 'pink' ? '#9d174d' : seasonData.color === 'green' ? '#166534' : '#991b1b') }]}>
-              {seasonData.name} 시즌 작업 가이드
-            </Text>
-            <Text style={[styles.bannerSubtitle, { color: theme.colors.subText }]}>지금 시기에 집중해야 할 핵심 작업 {seasonData.tasks.length}가지</Text>
+      {/* 대시보드 그리드 */}
+      <View style={styles.dashboardGrid}>
+        {/* 오늘의 판매 */}
+        <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <Text style={[styles.statLabel, { color: theme.colors.subText }]}>💸 오늘의 판매</Text>
+          <Text style={[styles.statValue, { color: theme.colors.primary }]}>{todaySalesTotal.toLocaleString()}원</Text>
+        </View>
+
+        {/* 할 일 현황 */}
+        <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <Text style={[styles.statLabel, { color: theme.colors.subText }]}>✅ 미완료 할일</Text>
+          <Text style={[styles.statValue, { color: '#ef4444' }]}>{todoCount}건</Text>
+        </View>
+      </View>
+
+      {/* 최근 영농일지 요약 */}
+      <View style={[styles.sectionCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>🖋️ 최근 영농일지</Text>
+        <View style={styles.memoList}>
+          {recentMemos.length > 0 ? recentMemos.map((memo) => (
+            <View key={memo.id} style={[styles.memoItem, { borderBottomColor: theme.colors.border }]}>
+              <Text style={[styles.memoDate, { color: theme.colors.primary }]}>{memo.date}</Text>
+              <Text style={[styles.memoContent, { color: theme.colors.text }]} numberOfLines={1}>{memo.content}</Text>
+            </View>
+          )) : (
+            <Text style={{ color: theme.colors.subText, fontSize: 13, fontStyle: 'italic' }}>기록된 일지가 없습니다.</Text>
+          )}
+        </View>
+      </View>
+
+      {/* 재고 경고 (부족 품목) */}
+      {lowStockItems.length > 0 && (
+        <View style={[styles.sectionCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderLeftWidth: 4, borderLeftColor: '#f59e0b' }]}>
+          <Text style={[styles.sectionTitle, { color: '#b45309' }]}>⚠️ 재고 부족 주의</Text>
+          <View style={styles.stockWarningList}>
+            {lowStockItems.map((item, idx) => (
+              <View key={idx} style={styles.stockWarningItem}>
+                <Text style={[styles.stockName, { color: theme.colors.text }]}>{item.name}</Text>
+                <Text style={[styles.stockQty, { color: '#dc2626' }]}>{item.qty}개 남음</Text>
+              </View>
+            ))}
           </View>
         </View>
-
-        {/* 현재 시즌 할 일 목록 */}
-        <View style={[styles.taskList, { borderTopColor: theme.colors.border }]}>
-          {seasonData.tasks.map((task, idx) => {
-            const urgency = urgencyBadge[task.urgency];
-            return (
-              <View key={task.id} style={[styles.taskItem, { backgroundColor: isDarkMode ? theme.colors.tint : '#f8fafc', borderColor: theme.colors.border }]}>
-                <View style={styles.taskTitleRow}>
-                  <Text style={[styles.taskTitle, { color: theme.colors.text }]}>{task.title}</Text>
-                  <View style={[styles.urgencyBadge, { backgroundColor: urgency.bg }]}>
-                    <Text style={[styles.urgencyText, { color: urgency.text }]}>{urgency.label}</Text>
-                  </View>
-                </View>
-                <Text style={{ fontSize: 12, color: theme.colors.subText }}>📅 {task.period}</Text>
-              </View>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* 다음 시즌 미리보기 */}
-      <View style={[styles.nextCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-        <Text style={[styles.nextCardTitle, { color: theme.colors.text }]}>📋 다음 시즌 미리보기</Text>
-        <View style={[styles.nextContentBox, { backgroundColor: isDarkMode ? theme.colors.background : '#f3f4f6' }]}>
-          <Text style={[styles.nextSeasonTitle, { color: theme.colors.text }]}>
-            {nextSeason.emoji} {nextSeason.name} ({nextSeason.months.map(m => `${m}월`).join(' · ')})
-          </Text>
-          {nextSeason.tasks.map(task => (
-            <View key={task.id} style={styles.nextTaskRow}>
-              <View style={[styles.dot, { backgroundColor: theme.colors.subText }]} />
-              <Text style={{ fontSize: 14, color: isDarkMode ? theme.colors.subText : '#4b5563' }}>{task.title}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      )}
     </ScrollView>
   );
 }
@@ -89,9 +137,24 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 32 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   welcomeSection: { marginBottom: 20, paddingHorizontal: 4 },
   welcomeText: { fontSize: 22, fontWeight: 'bold' },
   welcomeSubtext: { fontSize: 14, marginTop: 4 },
+  dashboardGrid: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  statCard: { flex: 1, padding: 16, borderRadius: 16, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
+  statLabel: { fontSize: 13, fontWeight: 'bold', marginBottom: 8 },
+  statValue: { fontSize: 18, fontWeight: '900' },
+  sectionCard: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 20 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 16 },
+  memoList: { gap: 12 },
+  memoItem: { paddingBottom: 8, borderBottomWidth: 1 },
+  memoDate: { fontSize: 12, fontWeight: 'bold', marginBottom: 2 },
+  memoContent: { fontSize: 14 },
+  stockWarningList: { gap: 8 },
+  stockWarningItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  stockName: { fontSize: 14, flex: 1 },
+  stockQty: { fontSize: 14, fontWeight: 'bold' },
   mainCard: { borderRadius: 16, padding: 20, borderWidth: 2, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 },
   bannerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   bannerEmoji: { fontSize: 36 },

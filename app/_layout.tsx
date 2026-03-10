@@ -43,7 +43,8 @@ function TabNavigator() {
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: '홈',
+                    title: '스마트 영농일지',
+                    tabBarLabel: '홈',
                     tabBarIcon: () => <Text style={{ fontSize: 22 }}>🏠</Text>,
                 }}
             />
