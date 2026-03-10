@@ -13,11 +13,18 @@ function getWeatherEmoji(code: number, isDay: boolean) {
     return '🌡️';
 }
 
-function getAirQuality(pm10: number) {
-    if (pm10 <= 30) return { label: '좋음', color: '#16a34a', emoji: '🔵' };
-    if (pm10 <= 80) return { label: '보통', color: '#2563eb', emoji: '🟢' };
-    if (pm10 <= 150) return { label: '나쁨', color: '#d97706', emoji: '🟡' };
-    return { label: '매우나쁨', color: '#dc2626', emoji: '🔴' };
+function getAirQuality(type: 'pm10' | 'pm25', value: number) {
+    if (type === 'pm10') {
+        if (value <= 30) return { label: '좋음', color: '#16a34a', emoji: '🔵' };
+        if (value <= 80) return { label: '보통', color: '#2563eb', emoji: '🟢' };
+        if (value <= 150) return { label: '나쁨', color: '#d97706', emoji: '🟡' };
+        return { label: '매우나쁨', color: '#dc2626', emoji: '🔴' };
+    } else {
+        if (value <= 15) return { label: '좋음', color: '#16a34a', emoji: '🔵' };
+        if (value <= 35) return { label: '보통', color: '#2563eb', emoji: '🟢' };
+        if (value <= 75) return { label: '나쁨', color: '#d97706', emoji: '🟡' };
+        return { label: '매우나쁨', color: '#dc2626', emoji: '🔴' };
+    }
 }
 
 export default function WeatherWidget() {
@@ -42,35 +49,34 @@ export default function WeatherWidget() {
     }
 
     const weatherEmoji = getWeatherEmoji(weather.weatherCode, weather.isDay);
-    const airQuality = getAirQuality(weather.pm10);
+    const air10 = getAirQuality('pm10', weather.pm10);
+    const air25 = getAirQuality('pm25', weather.pm25);
 
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-            <View style={styles.row}>
-                {/* 왼쪽: 기온 및 날씨 */}
-                <View style={styles.weatherBox}>
-                    <Text style={styles.emoji}>{weatherEmoji}</Text>
-                    <View>
-                        <Text style={[styles.temp, { color: theme.colors.text }]}>{weather.temperature}°C</Text>
-                        <Text style={{ fontSize: 11, color: theme.colors.subText, marginTop: 2 }} numberOfLines={1}>📍 {weather.locationName}</Text>
-                    </View>
+            {/* 1. 상단: 기온 및 날씨 */}
+            <View style={styles.weatherBox}>
+                <Text style={styles.emoji}>{weatherEmoji}</Text>
+                <Text style={[styles.temp, { color: theme.colors.text }]} adjustsFontSizeToFit numberOfLines={1}>{weather.temperature}°C</Text>
+                <Text style={{ fontSize: 16, color: theme.colors.text, fontWeight: '600', marginLeft: 6 }} numberOfLines={1}>{weather.locationName}</Text>
+            </View>
+
+            {/* 가로 구분선 */}
+            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+            {/* 2. 하단: 미세먼지 정보 */}
+            <View style={styles.airBox}>
+                <View style={styles.airRow}>
+                    <Text style={[styles.airLabel, { color: theme.colors.subText }]} adjustsFontSizeToFit numberOfLines={1}>미세먼지</Text>
+                    <Text style={[styles.airStat, { color: air10.color }]} adjustsFontSizeToFit numberOfLines={1}>
+                        {air10.emoji} {air10.label} ({weather.pm10} ㎍/m³)
+                    </Text>
                 </View>
-
-                {/* 세로 구분선 */}
-                <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-
-                {/* 오른쪽: 미세먼지 정보 */}
-                <View style={styles.airBox}>
-                    <View style={styles.airRow}>
-                        <Text style={[styles.airLabel, { color: theme.colors.subText }]}>미세먼지</Text>
-                        <Text style={[styles.airStat, { color: airQuality.color }]}>
-                            {airQuality.emoji} {airQuality.label} ({weather.pm10}㎍)
-                        </Text>
-                    </View>
-                    <View style={styles.airRow}>
-                        <Text style={[styles.airLabel, { color: theme.colors.subText }]}>초미세먼지</Text>
-                        <Text style={[styles.airStatVal, { color: theme.colors.text }]}>{weather.pm25} ㎍/m³</Text>
-                    </View>
+                <View style={styles.airRow}>
+                    <Text style={[styles.airLabel, { color: theme.colors.subText }]} adjustsFontSizeToFit numberOfLines={1}>초미세먼지</Text>
+                    <Text style={[styles.airStat, { color: air25.color }]} adjustsFontSizeToFit numberOfLines={1}>
+                        {air25.emoji} {air25.label} ({weather.pm25} ㎍/m³)
+                    </Text>
                 </View>
             </View>
         </View>
@@ -84,14 +90,15 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2
     },
     center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 24 },
-    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    weatherBox: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    emoji: { fontSize: 38 },
-    temp: { fontSize: 22, fontWeight: 'bold' },
-    divider: { width: 1, height: '80%', marginHorizontal: 16 },
-    airBox: { flex: 1.2, gap: 6 },
-    airRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    airLabel: { fontSize: 13, fontWeight: '500' },
-    airStat: { fontSize: 13, fontWeight: 'bold' },
-    airStatVal: { fontSize: 13, fontWeight: 'bold' }
+    // 날씨 영역 (상단)
+    weatherBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
+    emoji: { fontSize: 36, marginRight: 4 },
+    temp: { fontSize: 26, fontWeight: 'bold' },
+    // 구분선 (가로형)
+    divider: { height: 1, width: '100%', marginBottom: 16 },
+    // 대기질 영역 (하단)
+    airBox: { gap: 10 },
+    airRow: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center' },
+    airLabel: { fontSize: 14, fontWeight: '600', width: 80, color: '#6b7280' },
+    airStat: { fontSize: 14, fontWeight: '700' }
 });

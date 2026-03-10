@@ -40,31 +40,46 @@ export function useWeather() {
           const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
           if (geocode && geocode.length > 0) {
             const place = geocode[0];
-            // 한국 기준: district(구) / subregion(시/군) / city(시) 순으로 조합
-            const parts = [place.city || place.subregion || '', place.district || place.name || ''].filter(Boolean);
-            locationName = parts.join(' ') || place.region || '현재 위치';
+            // 1. 객체의 모든 값 문자열 필터링 및 공백 분리
+            const values = Object.values(place).filter(v => typeof v === 'string') as string[];
+            const allWords = values.flatMap(v => v.split(/\s+/));
+
+            // 2. 숫자가 있든 없든 순수하게 '동', '읍', '면'으로 끝나는 단어를 최우선 탐색 (예: 구서2동)
+            let dongEupMyeon = allWords.find(w => /^[가-힣\d]+(동|읍|면)$/.test(w));
+
+            if (dongEupMyeon) {
+              locationName = dongEupMyeon;
+            } else {
+              // 3. 못 찾으면 번지수("32-6", "112") 형식이나 숫자로만 된 값이 아닌 유의미한 지역명(name, district 등)으로 대체
+              const validNames = [place.name, place.street, place.district, place.city].filter(v => v && !/^[\d\-]+$/.test(v));
+              locationName = validNames[0] || '현재 위치';
+            }
           }
         } catch (geoErr) {
           console.warn('역방향 지오코딩 실패:', geoErr);
         }
 
         // 4. Open-Meteo API 호출 (기상청/글로벌 모델 무료 통합)
-        // 날씨, 온도, 주/야간 여부, 미세먼지(PM10), 초미세먼지(PM2.5) 동시 호출
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,is_day,weather_code&hourly=pm10,pm2_5&timezone=auto`;
+        // 날씨, 온도, 주/야간 여부 호출
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,is_day,weather_code&timezone=auto`;
+        // 미세먼지(PM10), 초미세먼지(PM2.5) 대기질 전용 API 호출
+        const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=pm10,pm2_5&timezone=auto`;
 
-        const response = await fetch(url);
-        const data = await response.json();
+        const [weatherRes, airRes] = await Promise.all([
+          fetch(weatherUrl),
+          fetch(airQualityUrl)
+        ]);
 
-        if (data.current) {
-          // 현재 시간을 바탕으로 hourly 배열에서 가장 최신 PM10, PM2.5 값을 가져옵니다.
-          const nowHour = new Date().getHours();
+        const weatherData = await weatherRes.json();
+        const airData = await airRes.json();
 
+        if (weatherData.current) {
           setWeather({
-            temperature: data.current.temperature_2m,
-            weatherCode: data.current.weather_code,
-            isDay: data.current.is_day === 1,
-            pm10: data.hourly?.pm10?.[nowHour] ?? 0,
-            pm25: data.hourly?.pm2_5?.[nowHour] ?? 0,
+            temperature: weatherData.current.temperature_2m,
+            weatherCode: weatherData.current.weather_code,
+            isDay: weatherData.current.is_day === 1,
+            pm10: airData.current?.pm10 ?? 0,
+            pm25: airData.current?.pm2_5 ?? 0,
             locationName,
           });
         }

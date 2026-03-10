@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useInventory } from '@/hooks/useInventory';
-import DailyDashboard from '@/components/inventory/DailyDashboard';
-import IncomingForm from '@/components/inventory/IncomingForm';
+import PriceListView from '@/components/inventory/PriceListView';
+import ProductManager from '@/components/inventory/ProductManager';
 import { useTheme } from '@/contexts/ThemeContext';
 
-export default function InventoryScreen() {
+export default function ProductsScreen() {
     const inventoryHook = useInventory();
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const [activeTab, setActiveTab] = useState('product');
     const { theme } = useTheme();
 
     if (inventoryHook.isLoading) {
@@ -23,18 +23,18 @@ export default function InventoryScreen() {
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             {/* 탭 헤더 */}
             <View style={[styles.tabHeader, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
-                <TouchableOpacity style={[styles.tabButton, activeTab === 'dashboard' && { borderBottomColor: theme.colors.primary }]} onPress={() => setActiveTab('dashboard')}>
-                    <Text style={[styles.tabText, { color: activeTab === 'dashboard' ? theme.colors.primary : theme.colors.subText }]}>대시보드</Text>
+                <TouchableOpacity style={[styles.tabButton, activeTab === 'product' && { borderBottomColor: theme.colors.primary }]} onPress={() => setActiveTab('product')}>
+                    <Text style={[styles.tabText, { color: activeTab === 'product' ? theme.colors.primary : theme.colors.subText }]}>상품 등록</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.tabButton, activeTab === 'incoming' && { borderBottomColor: theme.colors.primary }]} onPress={() => setActiveTab('incoming')}>
-                    <Text style={[styles.tabText, { color: activeTab === 'incoming' ? theme.colors.primary : theme.colors.subText }]}>입고 등록</Text>
+                <TouchableOpacity style={[styles.tabButton, activeTab === 'prices' && { borderBottomColor: theme.colors.primary }]} onPress={() => setActiveTab('prices')}>
+                    <Text style={[styles.tabText, { color: activeTab === 'prices' ? theme.colors.primary : theme.colors.subText }]}>단가표</Text>
                 </TouchableOpacity>
             </View>
 
             {/* 컨텐츠 영역 */}
             <View style={styles.content}>
-                {activeTab === 'dashboard' && <DailyDashboard inventoryHook={inventoryHook} />}
-                {activeTab === 'incoming' && <IncomingForm inventoryHook={inventoryHook} onSuccess={() => setActiveTab('dashboard')} />}
+                {activeTab === 'product' && <ProductManager inventoryHook={inventoryHook} onSuccess={() => setActiveTab('prices')} />}
+                {activeTab === 'prices' && <PriceListView prices={inventoryHook.prices} deliveryFee={inventoryHook.deliveryFee} updateDeliveryFee={inventoryHook.updateDeliveryFee} updatePrice={inventoryHook.updatePrice} deletePriceItem={inventoryHook.deletePriceItem} />}
             </View>
         </View>
     );
